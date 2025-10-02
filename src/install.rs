@@ -76,7 +76,11 @@ fn find_icon(dir: &Path) -> io::Result<Option<PathBuf>> {
     for entry in fs::read_dir(dir)? {
         let entry: fs::DirEntry = entry?;
         let path: PathBuf = entry.path();
-        if path.is_file() && path.extension().map_or(false, |ext: &OsStr| ext == "png") {
+        if path.is_file()
+            && path.extension().map_or(false, |ext: &OsStr| {
+                ext == "png" || ext == "jpg" || ext == "svg"
+            })
+        {
             return Ok(Some(path));
         }
     }
