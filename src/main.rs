@@ -11,8 +11,11 @@ fn main() {
 
     match &cli.command {
         cli::Commands::Install { path } => {
-            install::install_app(&path).unwrap();
+            if let Err(err) = install::install_app(&path) {
+                eprintln!("install failed: {}", err);
+                std::process::exit(1);
+            }
         }
-        cli::Commands::Uninstall { name } => {}
+        cli::Commands::Uninstall { name: _ } => {}
     }
 }
