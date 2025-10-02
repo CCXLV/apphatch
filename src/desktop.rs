@@ -67,8 +67,10 @@ impl Desktop {
             home.join(".local/share/applications")
         };
 
-        let destination_path: PathBuf =
-            applications_dir.join(format!("{}.desktop", self.name.to_lowercase()));
+        let destination_path: PathBuf = applications_dir.join(format!(
+            "{}.desktop",
+            self.name.to_lowercase().replace(" ", "-")
+        ));
 
         if destination_path.exists() {
             return Err(io::Error::new(
