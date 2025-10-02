@@ -128,9 +128,8 @@ pub fn install_app(path: &String) -> Result<(), io::Error> {
     println!("Created temporary dir: {}", &temp_dir_path.display());
 
     let expanded_input: PathBuf = expand_tilde(path);
-    let canonical_input: PathBuf = expanded_input;
 
-    extract_appimage(&canonical_input, &temp_dir_path)?;
+    extract_appimage(&expanded_input, &temp_dir_path)?;
 
     let extracted_dir: PathBuf = temp_dir_path.join("squashfs-root");
 
@@ -146,7 +145,10 @@ pub fn install_app(path: &String) -> Result<(), io::Error> {
 
         println!("App: {}", desktop.name);
 
-        let app_dir_path: PathBuf = PathBuf::from(format!("/opt/{}", &desktop.name.to_lowercase()));
+        let app_dir_path: PathBuf = PathBuf::from(format!(
+            "/opt/{}",
+            &desktop.name.to_lowercase().replace(" ", "-")
+        ));
         let app_exists = fs::exists(&app_dir_path).expect("App already exists");
         if app_exists {
             let _ = cleanup(&temp_dir_path);
@@ -180,19 +182,17 @@ pub fn install_app(path: &String) -> Result<(), io::Error> {
 
         let _ = Command::new("update-desktop-database")
             .arg(
-                std::env::var("HOME")
+                env::var("HOME")
                     .map(|h: String| format!("{}/.local/share/applications", h))
                     .unwrap_or_else(|_| "/usr/share/applications".to_string()),
             )
             .output();
 
-        println!(
+        Ok(println!(
             "{} installed successfully at {}",
             &desktop.name,
             &app_dir_path.display()
-        );
-
-        Ok(())
+        ))
     } else {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
