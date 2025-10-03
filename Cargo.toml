@@ -1,9 +1,40 @@
 [package]
 name = "apphatch"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+authors = ["CCXLV <mereba2627@gmail.com>"]
+description = "AppHatch - Application management tool"
+license = "MIT"
+repository = "https://github.com/yourusername/apphatch"
+homepage = "https://github.com/yourusername/apphatch"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 ini = "1.3.0"
 uuid = { version = "1.18.1", features = ["v4"] }
+
+[package.metadata.deb]
+maintainer = "CCXLV <mereba2627@gmail.com>"
+copyright = "2024"
+license-file = ["LICENSE"]
+depends = "$auto"
+section = "utils"
+priority = "optional"
+assets = [
+    ["target/release/apphatch", "usr/bin/", "755"],
+]
+
+[package.metadata.rpm]
+license = "MIT"
+group = "Development/Tools"
+requires = []
+assets = [
+    ["target/release/apphatch", "/usr/bin/apphatch", "755"],
+]
+
+[package.metadata.aur]
+maintainer = "CCXLV <mereba2627@gmail.com>"
+license = "MIT"
+depends = []
+make-depends = []
+opt-depends = []

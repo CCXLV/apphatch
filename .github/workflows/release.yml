@@ -1,0 +1,152 @@
+name: AppHatch Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            package_type: deb
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            package_type: rpm
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            package_type: arch
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.target }}-
+
+      - name: Build project
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Install cargo-deb (for Debian packages)
+        if: matrix.package_type == 'deb'
+        run: cargo install cargo-deb
+
+      - name: Build Debian package
+        if: matrix.package_type == 'deb'
+        run: |
+          # Remove 'v' prefix from version for package
+          VERSION=${GITHUB_REF_NAME#v}
+          cargo deb --target ${{ matrix.target }} -- --deb-version=$VERSION
+
+      - name: Install cargo-rpm (for Fedora packages)
+        if: matrix.package_type == 'rpm'
+        run: cargo install cargo-rpm
+
+      - name: Build RPM package
+        if: matrix.package_type == 'rpm'
+        run: |
+          # Remove 'v' prefix from version for package
+          VERSION=${GITHUB_REF_NAME#v}
+          cargo rpm build --target ${{ matrix.target }} -- --version=$VERSION
+
+      - name: Install cargo-aur (for Arch packages)
+        if: matrix.package_type == 'arch'
+        run: cargo install cargo-aur
+
+      - name: Build Arch package
+        if: matrix.package_type == 'arch'
+        run: |
+          # Remove 'v' prefix from version for package
+          VERSION=${GITHUB_REF_NAME#v}
+          cargo aur --target ${{ matrix.target }} -- --version=$VERSION
+
+      - name: Upload Debian package
+        if: matrix.package_type == 'deb'
+        uses: actions/upload-artifact@v4
+        with:
+          name: apphatch-debian-${{ github.ref_name }}
+          path: target/${{ matrix.target }}/debian/*.deb
+
+      - name: Upload RPM package
+        if: matrix.package_type == 'rpm'
+        uses: actions/upload-artifact@v4
+        with:
+          name: apphatch-fedora-${{ github.ref_name }}
+          path: target/${{ matrix.target }}/rpmbuild/RPMS/*/*.rpm
+
+      - name: Upload Arch package
+        if: matrix.package_type == 'arch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: apphatch-arch-${{ github.ref_name }}
+          path: target/${{ matrix.target }}/aur/*.pkg.tar.zst
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: AppHatch ${{ github.ref_name }}
+          body: |
+            ## AppHatch ${{ github.ref_name }}
+            
+            ### Downloads
+            - **Debian/Ubuntu**: `apphatch_${{ github.ref_name }}_amd64.deb`
+            - **Fedora/RHEL**: `apphatch-${{ github.ref_name }}-1.x86_64.rpm`
+            - **Arch Linux**: `apphatch-${{ github.ref_name }}-1-x86_64.pkg.tar.zst`
+            
+            ### Installation
+            
+            **Debian/Ubuntu:**
+            ```bash
+            sudo dpkg -i apphatch_${{ github.ref_name }}_amd64.deb
+            ```
+            
+            **Fedora/RHEL:**
+            ```bash
+            sudo rpm -i apphatch-${{ github.ref_name }}-1.x86_64.rpm
+            ```
+            
+            **Arch Linux:**
+            ```bash
+            sudo pacman -U apphatch-${{ github.ref_name }}-1-x86_64.pkg.tar.zst
+            ```
+          files: |
+            apphatch-debian-${{ github.ref_name }}/*.deb
+            apphatch-fedora-${{ github.ref_name }}/*.rpm
+            apphatch-arch-${{ github.ref_name }}/*.pkg.tar.zst
+          draft: false
+          prerelease: false
+
