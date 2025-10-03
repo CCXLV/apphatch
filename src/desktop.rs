@@ -1,10 +1,11 @@
 use std::collections::HashMap;
-use std::env;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
 use ini::ini;
+
+use crate::utils::get_applications_dir;
 
 fn get_name(map: &HashMap<String, HashMap<String, Option<String>>>) -> Option<&str> {
     let sec = map.get("desktop entry");
@@ -51,21 +52,7 @@ impl Desktop {
         exec_path: impl AsRef<Path>,
         icon_path: impl AsRef<Path>,
     ) -> Result<(), io::Error> {
-        // Determine the correct applications directory, even when run with sudo
-        let applications_dir: PathBuf = if let Ok(xdg) = env::var("XDG_DATA_HOME") {
-            PathBuf::from(xdg).join("applications")
-        } else {
-            let home: PathBuf = match (env::var("HOME"), env::var("SUDO_USER")) {
-                (Ok(home), _) if !home.is_empty() && home != "/root" => PathBuf::from(home),
-                (Ok(home), Ok(sudo_user)) if home == "/root" => {
-                    PathBuf::from(format!("/home/{}", sudo_user))
-                }
-                (Ok(home), _) => PathBuf::from(home),
-                (Err(_), Ok(sudo_user)) => PathBuf::from(format!("/home/{}", sudo_user)),
-                (Err(_), Err(_)) => PathBuf::from("/root"),
-            };
-            home.join(".local/share/applications")
-        };
+        let applications_dir: PathBuf = get_applications_dir();
 
         let destination_path: PathBuf = applications_dir.join(format!(
             "{}.desktop",

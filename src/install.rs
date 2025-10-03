@@ -9,7 +9,7 @@ use std::process::{Command, Stdio};
 use uuid::Uuid;
 
 use crate::desktop::Desktop;
-use crate::utils::expand_tilde;
+use crate::utils::{expand_tilde, get_applications_dir};
 
 fn extract_appimage(appimage_path: &Path, extract_dir: &Path) -> io::Result<()> {
     let new_path: PathBuf = extract_dir.join("App.AppImage");
@@ -107,6 +107,11 @@ fn flatten_squashfs_root(app_dir: &Path) -> io::Result<()> {
             }
         }
 
+        let appimage_path: PathBuf = app_dir.join("App.AppImage");
+        if appimage_path.exists() {
+            let _ = fs::remove_file(appimage_path);
+        }
+
         fs::rename(&from_path, &to_path)?;
     }
 
@@ -149,10 +154,9 @@ pub fn install_app(path: &String) -> Result<(), io::Error> {
 
         println!("App: {}", desktop.name);
 
-        let app_dir_path: PathBuf = PathBuf::from(format!(
-            "/opt/{}",
-            &desktop.name.to_lowercase().replace(" ", "-")
-        ));
+        let app_dir_name: &String = &desktop.name.to_lowercase().replace(" ", "-");
+        let app_dir_path: PathBuf = PathBuf::from(format!("/opt/{}", app_dir_name));
+
         let app_exists = fs::exists(&app_dir_path).expect("App already exists");
         if app_exists {
             let _ = cleanup(&temp_dir_path);
@@ -184,13 +188,17 @@ pub fn install_app(path: &String) -> Result<(), io::Error> {
 
         desktop.create_desktop(&exec_path, &icon_path)?;
 
+        let applications_dir: PathBuf = get_applications_dir();
         let _ = Command::new("update-desktop-database")
-            .arg(
-                env::var("HOME")
-                    .map(|h: String| format!("{}/.local/share/applications", h))
-                    .unwrap_or_else(|_| "/usr/share/applications".to_string()),
-            )
+            .arg(applications_dir)
             .output();
+
+        let _ = Command::new("chmod")
+            .arg("-R")
+            .arg("a+rwx")
+            .arg(&app_dir_path)
+            .output()
+            .expect("failed to execute chmod");
 
         Ok(println!(
             "{} installed successfully at {}",
