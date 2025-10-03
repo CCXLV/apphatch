@@ -1,10 +1,24 @@
 use std::env;
 use std::fs;
-use std::io;
+use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::Command;
 
 pub fn uninstall_app(name: &str) -> Result<(), io::Error> {
+    println!("Are you sure you want to remove app {}? (Y/n)", name);
+    io::stdout().flush().unwrap();
+
+    let mut user_input = String::new();
+
+    io::stdin()
+        .read_line(&mut user_input)
+        .expect("Failed to read line");
+
+    let user_answer = user_input.trim();
+    if user_answer != "y" || user_answer != "Y" {
+        std::process::exit(1);
+    }
+
     println!("Starting deleting the app {}", name);
 
     let app_dir_path: PathBuf = PathBuf::from(format!("/opt/{}", name.to_lowercase()));
