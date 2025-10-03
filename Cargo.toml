@@ -5,8 +5,8 @@ edition = "2024"
 authors = ["CCXLV <mereba2627@gmail.com>"]
 description = "AppHatch - Application management tool"
 license = "MIT"
-repository = "https://github.com/yourusername/apphatch"
-homepage = "https://github.com/yourusername/apphatch"
+repository = "https://github.com/ccxlv/apphatch"
+homepage = "https://github.com/ccxlv/apphatch"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
@@ -24,12 +24,9 @@ assets = [
     ["target/release/apphatch", "usr/bin/", "755"],
 ]
 
-[package.metadata.rpm]
-license = "MIT"
-group = "Development/Tools"
-requires = []
+[package.metadata.generate-rpm]
 assets = [
-    ["target/release/apphatch", "/usr/bin/apphatch", "755"],
+    { source = "target/release/apphatch", dest = "/usr/bin/apphatch" },
 ]
 
 [package.metadata.aur]
