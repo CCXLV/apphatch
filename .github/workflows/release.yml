@@ -78,7 +78,7 @@ jobs:
         run: |
           # Remove 'v' prefix from version for package
           VERSION=${GITHUB_REF_NAME#v}
-          cargo aur --target ${{ matrix.target }} -- --version=$VERSION
+          cargo aur --version=$VERSION
 
       - name: Upload Debian package
         if: matrix.package_type == 'deb'
