@@ -1,7 +1,7 @@
 [package]
 name = "apphatch"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["CCXLV <mereba2627@gmail.com>"]
 description = "AppHatch - Application management tool"
 license = "MIT"
