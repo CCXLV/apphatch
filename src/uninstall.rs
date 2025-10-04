@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use std::process::Command;
 
 pub fn uninstall_app(name: &str) -> Result<(), io::Error> {
-    println!("Are you sure you want to remove app {}? (Y/n)", name);
-    io::stdout().flush().unwrap();
+    print!("Are you sure you want to remove app {}? (Y/n): ", name);
+    io::stdout().flush().expect("Failed to flush stdout");
 
     let mut user_input = String::new();
 
@@ -14,8 +14,8 @@ pub fn uninstall_app(name: &str) -> Result<(), io::Error> {
         .read_line(&mut user_input)
         .expect("Failed to read line");
 
-    let user_answer = user_input.trim();
-    if user_answer != "y" || user_answer != "Y" {
+    let user_answer: &str = user_input.trim();
+    if user_answer != "y" && user_answer != "Y" {
         std::process::exit(1);
     }
 
