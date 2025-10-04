@@ -28,19 +28,19 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: apphatch-debian-${{ github.ref_name }}
-          path: target/*.deb
+          path: target/deb/*.deb
 
       - name: Upload RPM package
         uses: actions/upload-artifact@v4
         with:
           name: apphatch-fedora-${{ github.ref_name }}
-          path: target/*.rpm
+          path: target/rpm/*.rpm
 
       - name: Upload Arch package
         uses: actions/upload-artifact@v4
         with:
           name: apphatch-arch-${{ github.ref_name }}
-          path: target/*.pkg.tar.zst
+          path: target/aur/*.pkg.tar.zst
 
   release:
     needs: build

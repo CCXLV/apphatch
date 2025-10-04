@@ -47,8 +47,8 @@ FROM rust:latest
 
 WORKDIR /app
 
-COPY --from=builder /app/target/debian /app/target/debian
-COPY --from=builder /app/target/generate-rpm /app/target/generate-rpm
-COPY --from=aur-builder /app/target/cargo-aur /app/target/cargo-aur
+COPY --from=builder /app/target/debian /app/target/deb
+COPY --from=builder /app/target/generate-rpm /app/target/rpm
+COPY --from=aur-builder /app/target/cargo-aur /app/target/aur
 
 CMD ["tail", "-f", "/dev/null"]
