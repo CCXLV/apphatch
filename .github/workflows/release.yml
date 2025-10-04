@@ -11,18 +11,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            package_type: deb
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            package_type: rpm
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            package_type: arch
 
     steps:
       - name: Checkout repository
@@ -30,75 +18,27 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ matrix.target }}-
-
-      - name: Build project
-        run: cargo build --release --target ${{ matrix.target }}
-
-      - name: Install cargo-deb (for Debian packages)
-        if: matrix.package_type == 'deb'
-        run: cargo install cargo-deb
-
-      - name: Build Debian package
-        if: matrix.package_type == 'deb'
-        run: |
-          cargo deb
-
-      - name: Install cargo-generate-rpm (for Fedora packages)
-        if: matrix.package_type == 'rpm'
-        run: cargo install cargo-generate-rpm
-
-      - name: Build RPM package
-        if: matrix.package_type == 'rpm'
-        run: cargo generate-rpm
-
-      - name: Install cargo-aur (for Arch packages)
-        if: matrix.package_type == 'arch'
-        run: cargo install cargo-aur
-
-      - name: Build Arch package
-        if: matrix.package_type == 'arch'
-        run: |
-          cargo aur
-
+      
+      - name: Run Docker container
+        run: docker compose -f docker/docker-compose.yml run apphatch --build -d
+      
       - name: Upload Debian package
-        if: matrix.package_type == 'deb'
         uses: actions/upload-artifact@v4
         with:
           name: apphatch-debian-${{ github.ref_name }}
-          path: target//debian/*.deb
+          path: target/*.deb
 
       - name: Upload RPM package
-        if: matrix.package_type == 'rpm'
         uses: actions/upload-artifact@v4
         with:
           name: apphatch-fedora-${{ github.ref_name }}
-          path: target/release/generate-rpm/*.rpm
-
-      - name: Build Arch package
-        if: matrix.package_type == 'arch'
-        run: |
-          cd target/cargo-aur
-          makepkg
+          path: target/*.rpm
 
       - name: Upload Arch package
-        if: matrix.package_type == 'arch'
         uses: actions/upload-artifact@v4
         with:
           name: apphatch-arch-${{ github.ref_name }}
-          path: target/cargo-aur/*.pkg.tar.zst
+          path: target/*.pkg.tar.zst
 
   release:
     needs: build
@@ -138,14 +78,14 @@ jobs:
             sudo rpm -i apphatch-${{ github.ref_name }}-1.x86_64.rpm
             ```
             
-            **Arch Linux:**
+            **Arch Linux:**q
             ```bash
             sudo pacman -U apphatch-bin-${{ github.ref_name }}-1-x86_64.pkg.tar.zst
             ```
           files: |
             apphatch-debian-${{ github.ref_name }}/*.deb
             apphatch-fedora-${{ github.ref_name }}/*.rpm
-            apphatch-arch-${{ github.ref_name }}/*.pkg.tar.zst
+            apphatch-arch-${{ github.ref_name }}/*.tar.gz
           draft: false
           prerelease: false
 

@@ -1,0 +1,8 @@
+services:
+  apphatch:
+    container_name: apphatch
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: tail -f /dev/null
+
