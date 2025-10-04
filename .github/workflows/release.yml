@@ -85,7 +85,7 @@ jobs:
             sudo rpm -i apphatch-${{ github.ref_name }}-1.x86_64.rpm
             ```
             
-            **Arch Linux:**q
+            **Arch Linux:**
             ```bash
             sudo pacman -U apphatch-bin-${{ github.ref_name }}-1-x86_64.pkg.tar.zst
             ```
