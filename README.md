@@ -5,10 +5,8 @@ A simple AppImage management tool for Linux that helps you install AppImage appl
 ## Features
 
 - Install AppImage applications from various sources
-- Manage AppImage configurations and metadata
 - Cross-distribution compatibility
 - Simple command-line interface
-- Automatic AppImage integration
 
 ## Installation
 
