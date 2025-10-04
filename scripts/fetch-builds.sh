@@ -69,11 +69,11 @@ copy_aur_artifacts() {
     fi
 }
 
-copy_artifacts "target/debian/*.deb" "Debian packages"
+copy_artifacts "target/deb/*.deb" "Debian packages"
 
-copy_aur_artifacts "target/cargo-aur/*.pkg.tar.zst" "AUR packages"
+copy_aur_artifacts "target/aur/*.pkg.tar.zst" "AUR packages"
 
-copy_artifacts "target/generate-rpm/*.rpm" "RPM packages"
+copy_artifacts "target/rpm/*.rpm" "RPM packages"
 
 echo ""
 echo "Build artifacts have been copied to: $TARGET_DIR"

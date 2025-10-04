@@ -23,24 +23,29 @@ jobs:
         run: |
           docker compose -f docker/docker-compose.yml build
           docker compose -f docker/docker-compose.yml up -d
+
+      - name: Fetch built binaries
+        run: |
+          sudo chmod +x scripts/fetch-builds.sh
+          scripts/fetch-builds.sh
       
       - name: Upload Debian package
         uses: actions/upload-artifact@v4
         with:
           name: apphatch-debian-${{ github.ref_name }}
-          path: target/deb/*.deb
+          path: target/*.deb
 
       - name: Upload RPM package
         uses: actions/upload-artifact@v4
         with:
           name: apphatch-fedora-${{ github.ref_name }}
-          path: target/rpm/*.rpm
+          path: target/*.rpm
 
       - name: Upload Arch package
         uses: actions/upload-artifact@v4
         with:
           name: apphatch-arch-${{ github.ref_name }}
-          path: target/aur/*.pkg.tar.zst
+          path: target/*.pkg.tar.zst
 
   release:
     needs: build
