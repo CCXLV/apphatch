@@ -92,7 +92,7 @@ jobs:
           files: |
             apphatch-debian-${{ github.ref_name }}/*.deb
             apphatch-fedora-${{ github.ref_name }}/*.rpm
-            apphatch-arch-${{ github.ref_name }}/*.tar.gz
+            apphatch-arch-${{ github.ref_name }}/*.pkg.tar.zst
           draft: false
           prerelease: false
 
