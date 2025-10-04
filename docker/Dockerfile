@@ -6,7 +6,10 @@ WORKDIR /app
 COPY . .
 
 RUN apt-get update && apt-get install -y \
-  && rm -rf /var/lib/apt/lists/*
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN cargo install cargo-deb \
   && cargo install cargo-aur --version 1.7.1 \

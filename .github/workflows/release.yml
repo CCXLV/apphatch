@@ -19,8 +19,10 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       
-      - name: Run Docker container
-        run: docker compose -f docker/docker-compose.yml run apphatch --build -d
+      - name: Build and run Docker container
+        run: |
+          docker compose -f docker/docker-compose.yml build
+          docker compose -f docker/docker-compose.yml up -d
       
       - name: Upload Debian package
         uses: actions/upload-artifact@v4
