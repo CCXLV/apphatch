@@ -24,6 +24,11 @@ fn non_empty(opt: Option<&str>) -> Option<String> {
         }
     })
 }
+
+fn backup_current_desktop(path: &PathBuf) {
+    
+}
+
 pub struct Desktop {
     pub name: String,
     content: HashMap<String, HashMap<String, Option<String>>>,
@@ -97,6 +102,10 @@ impl Desktop {
         fs::write(destination_path, desktop_content)?;
 
         Ok(())
+    }
+
+    pub fn update_desktop(&self, path: impl AsRef<Path>) {
+
     }
 }
 

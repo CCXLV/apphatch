@@ -4,6 +4,7 @@ mod cli;
 mod desktop;
 mod install;
 mod uninstall;
+mod upgrade;
 mod utils;
 
 fn main() {
@@ -19,6 +20,12 @@ fn main() {
         cli::Commands::Uninstall { name } => {
             if let Err(err) = uninstall::uninstall_app(&name) {
                 eprintln!("Uninstall failed: {}", err);
+                std::process::exit(1);
+            }
+        }
+        cli::Commands::Upgrade { name, path } => {
+            if let Err(err) = upgrade::upgrade_app(&name, &path) {
+                eprint!("Upgrade failed: {}", err);
                 std::process::exit(1);
             }
         }

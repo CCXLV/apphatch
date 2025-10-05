@@ -1,123 +1,15 @@
-use std::env;
-use std::ffi::OsStr;
 use std::fs;
 use std::io;
-use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Command;
 
 use uuid::Uuid;
 
 use crate::desktop::Desktop;
-use crate::utils::{expand_tilde, get_applications_dir};
-
-fn extract_appimage(appimage_path: &Path, extract_dir: &Path) -> io::Result<()> {
-    let new_path: PathBuf = extract_dir.join("App.AppImage");
-
-    fs::copy(appimage_path, &new_path)?;
-
-    let mut perms = fs::metadata(&new_path)?.permissions();
-    perms.set_mode(perms.mode() | 0o755);
-    fs::set_permissions(&new_path, perms)?;
-
-    let prev_dir: PathBuf = env::current_dir()?;
-    env::set_current_dir(extract_dir)?;
-    let status = Command::new(&new_path)
-        .arg("--appimage-extract")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status();
-    let _ = env::set_current_dir(prev_dir);
-    status?;
-
-    Ok(())
-}
-
-fn find_desktop_file(dir: &Path) -> Option<PathBuf> {
-    if dir.is_dir() {
-        for entry in fs::read_dir(dir).ok()? {
-            let entry: fs::DirEntry = entry.ok()?;
-            let path: PathBuf = entry.path();
-
-            if path.is_file()
-                && path
-                    .extension()
-                    .map_or(false, |ext: &OsStr| ext == "desktop")
-            {
-                return Some(path);
-            }
-        }
-    }
-    None
-}
-
-fn find_executable(dir: &Path) -> io::Result<Option<PathBuf>> {
-    if !dir.is_dir() {
-        return Ok(None);
-    }
-    for entry in fs::read_dir(dir)? {
-        let entry: fs::DirEntry = entry?;
-        let path: PathBuf = entry.path();
-        if path.is_file() && path.extension().is_none() {
-            let metadata: fs::Metadata = fs::metadata(&path)?;
-            let permissions: fs::Permissions = metadata.permissions();
-            if permissions.mode() & 0o111 != 0 {
-                return Ok(Some(path));
-            }
-        }
-    }
-    Ok(None)
-}
-
-fn find_icon(dir: &Path) -> io::Result<Option<PathBuf>> {
-    if !dir.is_dir() {
-        return Ok(None);
-    }
-    for entry in fs::read_dir(dir)? {
-        let entry: fs::DirEntry = entry?;
-        let path: PathBuf = entry.path();
-        if path.is_file()
-            && path.extension().map_or(false, |ext: &OsStr| {
-                ext == "png" || ext == "jpg" || ext == "svg"
-            })
-        {
-            return Ok(Some(path));
-        }
-    }
-    Ok(None)
-}
-
-fn flatten_squashfs_root(app_dir: &Path) -> io::Result<()> {
-    let src_dir: PathBuf = app_dir.join("squashfs-root");
-    if !src_dir.is_dir() {
-        return Ok(());
-    }
-
-    for entry in fs::read_dir(&src_dir)? {
-        let entry: fs::DirEntry = entry?;
-        let from_path: PathBuf = entry.path();
-        let file_name = entry.file_name();
-        let to_path: PathBuf = app_dir.join(file_name);
-
-        if to_path.exists() {
-            if to_path.is_dir() {
-                fs::remove_dir_all(&to_path)?;
-            } else {
-                fs::remove_file(&to_path)?;
-            }
-        }
-
-        let appimage_path: PathBuf = app_dir.join("App.AppImage");
-        if appimage_path.exists() {
-            let _ = fs::remove_file(appimage_path);
-        }
-
-        fs::rename(&from_path, &to_path)?;
-    }
-
-    fs::remove_dir_all(&src_dir)?;
-    Ok(())
-}
+use crate::utils::{
+    expand_tilde, extract_appimage, find_desktop_file, find_executable, find_icon,
+    flatten_squashfs_root, get_applications_dir,
+};
 
 fn cleanup(dir: &Path) -> io::Result<()> {
     if dir.is_dir() {
@@ -142,73 +34,71 @@ pub fn install_app(path: &String) -> Result<(), io::Error> {
 
     let extracted_dir: PathBuf = temp_dir_path.join("squashfs-root");
 
-    if let Some(path) = find_desktop_file(&extracted_dir) {
-        let desktop: Result<Desktop, String> = Desktop::new(&path);
-        let desktop: Desktop = match desktop {
-            Ok(value) => value,
-            Err(err) => {
-                let _ = cleanup(&temp_dir_path);
-                return Err(io::Error::new(io::ErrorKind::InvalidData, err));
-            }
-        };
+    let desktop_file: PathBuf = find_desktop_file(&extracted_dir)?.ok_or_else(|| {
+        let _ = cleanup(&temp_dir_path);
+        io::Error::new(io::ErrorKind::NotFound, "Desktop ini file not found")
+    })?;
 
-        println!("App: {}", desktop.name);
-
-        let app_dir_name: &String = &desktop.name.to_lowercase().replace(" ", "-");
-        let app_dir_path: PathBuf = PathBuf::from(format!("/opt/{}", app_dir_name));
-
-        let app_exists = fs::exists(&app_dir_path).expect("App already exists");
-        if app_exists {
+    let desktop: Result<Desktop, String> = Desktop::new(&desktop_file);
+    let desktop: Desktop = match desktop {
+        Ok(value) => value,
+        Err(err) => {
             let _ = cleanup(&temp_dir_path);
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!("App named {} already exists", &desktop.name.to_lowercase()).to_string(),
-            ));
+            return Err(io::Error::new(io::ErrorKind::InvalidData, err));
         }
+    };
 
-        let _ = fs::rename(&temp_dir_path, &app_dir_path);
+    println!("App: {}", desktop.name);
 
-        flatten_squashfs_root(&app_dir_path)?;
+    let app_dir_name: &String = &desktop.name.to_lowercase().replace(" ", "-");
+    let app_dir_path: PathBuf = PathBuf::from(format!("/opt/{}", app_dir_name));
 
-        let exec_path: PathBuf = find_executable(&app_dir_path)?.ok_or_else(|| {
-            let _ = cleanup(&temp_dir_path);
-            let _ = cleanup(&app_dir_path);
-            io::Error::new(io::ErrorKind::NotFound, "exec not found")
-        })?;
-
-        println!("Exec: {}", &exec_path.display());
-
-        let icon_path: PathBuf = find_icon(&app_dir_path)?.ok_or_else(|| {
-            let _ = cleanup(&temp_dir_path);
-            let _ = cleanup(&app_dir_path);
-            io::Error::new(io::ErrorKind::NotFound, "icon not found")
-        })?;
-
-        println!("Icon: {}", &icon_path.display());
-
-        desktop.create_desktop(&exec_path, &icon_path)?;
-
-        let applications_dir: PathBuf = get_applications_dir();
-        let _ = Command::new("update-desktop-database")
-            .arg(applications_dir)
-            .output();
-
-        let _ = Command::new("chmod")
-            .arg("-R")
-            .arg("a+rwx")
-            .arg(&app_dir_path)
-            .output()
-            .expect("failed to execute chmod");
-
-        Ok(println!(
-            "{} installed successfully at {}",
-            &desktop.name,
-            &app_dir_path.display()
-        ))
-    } else {
+    let app_exists = fs::exists(&app_dir_path).expect("App already exists");
+    if app_exists {
+        let _ = cleanup(&temp_dir_path);
         return Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            "No .desktop file found",
+            io::ErrorKind::Other,
+            format!("App named {} already exists", &desktop.name.to_lowercase()).to_string(),
         ));
     }
+
+    let _ = fs::rename(&temp_dir_path, &app_dir_path);
+
+    flatten_squashfs_root(&app_dir_path)?;
+
+    let exec_path: PathBuf = find_executable(&app_dir_path)?.ok_or_else(|| {
+        let _ = cleanup(&temp_dir_path);
+        let _ = cleanup(&app_dir_path);
+        io::Error::new(io::ErrorKind::NotFound, "exec not found")
+    })?;
+
+    println!("Exec: {}", &exec_path.display());
+
+    let icon_path: PathBuf = find_icon(&app_dir_path)?.ok_or_else(|| {
+        let _ = cleanup(&temp_dir_path);
+        let _ = cleanup(&app_dir_path);
+        io::Error::new(io::ErrorKind::NotFound, "icon not found")
+    })?;
+
+    println!("Icon: {}", &icon_path.display());
+
+    desktop.create_desktop(&exec_path, &icon_path)?;
+
+    let applications_dir: PathBuf = get_applications_dir();
+    let _ = Command::new("update-desktop-database")
+        .arg(applications_dir)
+        .output();
+
+    let _ = Command::new("chmod")
+        .arg("-R")
+        .arg("a+rwx")
+        .arg(&app_dir_path)
+        .output()
+        .expect("failed to execute chmod");
+
+    Ok(println!(
+        "{} installed successfully at {}",
+        &desktop.name,
+        &app_dir_path.display()
+    ))
 }
