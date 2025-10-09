@@ -32,7 +32,12 @@ pub enum Commands {
         #[arg(help = "The name of the app to upgrade, it is case sensitive.")]
         name: String,
 
-        #[arg(long, value_name = "FILE", help = "The path to the AppImage file")]
+        #[arg(
+            short,
+            long,
+            value_name = "FILE",
+            help = "The path to the AppImage file"
+        )]
         path: String,
     },
 }

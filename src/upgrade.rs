@@ -96,8 +96,14 @@ pub fn upgrade_app(name: &String, path: &String) -> Result<(), io::Error> {
 
     println!("Icon: {}", &icon_path.display());
 
-    println!("Updating current .desktop configuration");
-    desktop.update_desktop(&desktop_file, &exec_path, &icon_path)?;
+    println!(
+        "Updating current .desktop configuration: {}",
+        &app_desktop_file.display()
+    );
+    if let Err(err) = desktop.update_desktop(&app_desktop_file, &exec_path, &icon_path) {
+        let _ = revert(&app_dir, &backup_dir_path);
+        return Err(io::Error::new(io::ErrorKind::NotFound, err));
+    }
 
     println!("Successfully upgraded the app");
 
