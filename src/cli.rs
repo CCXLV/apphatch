@@ -24,13 +24,15 @@ pub enum Commands {
         name: String,
     },
 
-    #[command(about = "Upgrade an already installed app")]
+    #[command(
+        about = "Upgrade an already installed app",
+        override_usage = "apphatch upgrade <NAME> --path <FILE>"
+    )]
     Upgrade {
         #[arg(help = "The name of the app to upgrade, it is case sensitive.")]
         name: String,
 
-        #[arg(short, long)]
-        #[arg(help = "The path to the AppImage file")]
+        #[arg(long, value_name = "FILE", help = "The path to the AppImage file")]
         path: String,
     },
 }
