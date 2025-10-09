@@ -4,7 +4,7 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::Command;
 
-pub fn uninstall_app(name: &str) -> Result<(), io::Error> {
+pub fn uninstall_app(name: &String) -> Result<(), io::Error> {
     print!("Are you sure you want to remove app {}? (Y/n): ", name);
     io::stdout().flush().expect("Failed to flush stdout");
 

@@ -4,6 +4,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use ini::ini;
+use uuid::Uuid;
 
 use crate::utils::get_applications_dir;
 
@@ -24,6 +25,43 @@ fn non_empty(opt: Option<&str>) -> Option<String> {
         }
     })
 }
+
+fn backup_current_desktop(path: &Path) -> io::Result<PathBuf> {
+    let parent: &Path = match path.parent() {
+        Some(p) => p,
+        None => {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "path has no parent",
+            ));
+        }
+    };
+
+    let stem = path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("desktop");
+    let backup_name = format!("{}.bak-{}", stem, &Uuid::new_v4().simple().to_string()[..6]);
+    let backup_path: PathBuf = parent.join(backup_name);
+
+    fs::rename(path, &backup_path)?;
+    Ok(backup_path)
+}
+
+fn revert_desktop(current_path: &Path, backup_path: &Path) -> Result<(), io::Error> {
+    if !current_path.exists() {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            "Current .desktop configuration file doesnt exist",
+        ));
+    }
+
+    fs::remove_file(&current_path)?;
+    fs::rename(backup_path, current_path)?;
+
+    Ok(())
+}
+
 pub struct Desktop {
     pub name: String,
     content: HashMap<String, HashMap<String, Option<String>>>,
@@ -95,6 +133,28 @@ impl Desktop {
 
         let desktop_content: String = lines.join("\n") + "\n";
         fs::write(destination_path, desktop_content)?;
+
+        Ok(())
+    }
+
+    pub fn update_desktop(
+        &self,
+        current_path: impl AsRef<Path>,
+        exec_path: impl AsRef<Path>,
+        icon_path: impl AsRef<Path>,
+    ) -> Result<(), io::Error> {
+        let backup_path: PathBuf = backup_current_desktop(current_path.as_ref())?;
+        println!("Backed up current .desktop configuration file");
+
+        if let Err(err) = self.create_desktop(exec_path, icon_path) {
+            let _ = revert_desktop(current_path.as_ref(), &backup_path);
+            return Err(err);
+        }
+
+        println!(
+            "Successfully updated current {} file",
+            current_path.as_ref().display()
+        );
 
         Ok(())
     }
