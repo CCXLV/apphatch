@@ -4,7 +4,7 @@ A simple AppImage management tool for Linux that helps you install, uninstall an
 
 ## Features
 
-- Install, Uninstall, Upgrade AppImage applications
+- Install, uninstall, upgrade AppImage applications
 - Cross-distribution compatibility
 - Simple command-line interface
 
