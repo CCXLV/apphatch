@@ -4,7 +4,7 @@ A simple AppImage management tool for Linux that helps you install, uninstall an
 
 ## Features
 
-- Install AppImage applications from various sources
+- Install, Uninstall, Upgrade AppImage applications
 - Cross-distribution compatibility
 - Simple command-line interface
 
@@ -31,6 +31,10 @@ apphatch uninstall <app-name>
 # Upgrade an app
 apphatch upgrade <app-name> -p <appimage-file-path>
 ```
+
+## How it works
+
+It extracts AppImage at `/opt/<app-name>` and on typical Linux system it creates `.desktop` at `~/.local/share/applications/`
 
 ## Building from Source
 
