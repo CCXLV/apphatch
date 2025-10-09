@@ -1,6 +1,6 @@
 # AppHatch
 
-A simple AppImage management tool for Linux that helps you install AppImage applications across different Linux distributions.
+A simple AppImage management tool for Linux that helps you install, uninstall and upgrade AppImage applications across different Linux distributions.
 
 ## Features
 
