@@ -28,7 +28,7 @@ apphatch install <appimage-file-path>
 # Uninstall an AppImage
 apphatch uninstall <app-name>
 
-# Upgrade am app
+# Upgrade an app
 apphatch upgrade <app-name> -p <appimage-file-path>
 ```
 
