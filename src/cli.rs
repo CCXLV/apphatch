@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
 #[command(name = "apphatch")]
-#[command(version = "0.1.0")]
+#[command(version = "0.1.2")]
 #[command(author = "CCXLV")]
 #[command(about = "Installs AppImages easily")]
 pub struct Cli {
