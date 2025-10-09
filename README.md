@@ -23,10 +23,13 @@ Download the latest release for your distribution:
 apphatch --help
 
 # Install an AppImage
-apphatch install -p <appimage-file-path>
+apphatch install <appimage-file-path>
 
 # Uninstall an AppImage
-apphatch uninstall -n <app-name>
+apphatch uninstall <app-name>
+
+# Upgrade am app
+apphatch upgrade <app-name> -p <appimage-file-path>
 ```
 
 ## Building from Source
