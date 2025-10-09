@@ -1,6 +1,6 @@
 [package]
 name = "apphatch"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 authors = ["CCXLV <mereba2627@gmail.com>"]
 description = "AppHatch - Application management tool"
